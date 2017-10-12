@@ -24,6 +24,8 @@ from boto3.exceptions import Boto3Error
 from botocore.exceptions import BotoCoreError, ClientError
 from jinja2.exceptions import TemplateError
 
+from azure_connection_manager import AzureConnectionManager
+
 from .config import ENVIRONMENT_CONFIG_ATTRIBUTES
 from .environment import Environment
 from .exceptions import SceptreException, ProjectAlreadyExistsError
@@ -42,6 +44,19 @@ def environment_options(func):
     :returns: function
     """
     func = click.argument("environment")(func)
+    return func
+
+
+def azure_environment_options(func):
+    """
+    azure_environment_options is a decorator which adds the rg argument to
+    the click function ``func``.
+
+    :param func: The click function to add the arguments to.
+    :type func: function
+    :returns: function
+    """
+    func = click.argument("resourcegroup")(func)
     return func
 
 
@@ -311,6 +326,42 @@ def launch_env(ctx, environment):
     response = env.launch()
     if not all(status == StackStatus.COMPLETE for status in response.values()):
         exit(1)
+
+
+@cli.command(name="azure-launch-env")
+@azure_environment_options
+@click.pass_context
+@catch_exceptions
+def azure_launch_env(ctx, resourcegroup):
+    """
+    Creates or updates all azure resources in template.
+
+    Creates or updates all the resources in the resource manager template.
+    """
+    my_subscription_id = os.environ.get('AZURE_SUBSCRIPTION_ID')
+    my_resource_group = resourcegroup
+    my_location = 'eastus'
+    my_deployment_name = 'sceptre-azure-test-deployment'
+
+    msg = "\nInitializing the ACM class with sub id: {}, deployment name: {}" \
+        "\nlocated in {} and in the {} resource group...\n\n"
+    msg = msg.format(my_subscription_id, my_deployment_name,
+                     my_location, my_resource_group)
+    print(msg)
+
+    acm = AzureConnectionManager(my_subscription_id, my_deployment_name,
+                                 my_location, my_resource_group)
+
+    print("Beginning the deployment... \n")
+    # Deploy the template
+    my_deployment = acm.deploy()
+
+    print("Done deploying!! NOW CLEANING UP!!{}\n", my_deployment)
+
+    acm.destroy()
+
+    print("Done with Azure.\n")
+    exit(0)
 
 
 @cli.command(name="delete-env")
