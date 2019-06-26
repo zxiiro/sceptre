@@ -347,7 +347,8 @@ class ConfigReader(object):
             rendered_template = template.render(
                 self.templating_vars,
                 command_path=self.context.command_path.split(path.sep),
-                environment_variable=environ
+                environment_variable=environ,
+                context=self.context
             )
 
             config = yaml.safe_load(rendered_template)
@@ -438,10 +439,11 @@ class ConfigReader(object):
         if filename == self.context.config_file:
             pass
 
+        stack_name = path.splitext(rel_path)[0]
+        self.templating_vars["stack_name"] = stack_name
         self.templating_vars["stack_group_config"] = stack_group_config
         parsed_stack_group_config = self._parsed_stack_group_config(stack_group_config)
         config = self.read(rel_path, stack_group_config)
-        stack_name = path.splitext(rel_path)[0]
 
         # Check for missing mandatory attributes
         for required_key in REQUIRED_KEYS:
