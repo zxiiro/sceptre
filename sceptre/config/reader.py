@@ -211,7 +211,7 @@ class ConfigReader(object):
                 stack_group_config = stack_group_configs[directory]
             else:
                 stack_group_config = stack_group_configs[directory] = \
-                    self.read(path.join(directory, self.context.config_file), allow_errors=True)
+                    self.read(path.join(directory, self.context.config_file))
 
             stack = self._construct_stack(rel_path, stack_group_config)
             stack_map[sceptreise_path(rel_path)] = stack
@@ -228,15 +228,11 @@ class ConfigReader(object):
                 ]
             else:
                 stack.dependencies = []
-            stacks.add(self.reload_stack(stack))
+            stacks.add(stack)
 
         return stacks, command_stacks
 
-    def reload_stack(self, stack):
-        # TODO
-        return stack
-
-    def read(self, rel_path, base_config=None, allow_errors=False):
+    def read(self, rel_path, base_config=None):
         """
         Reads in configuration from one or more YAML files
         within the Sceptre project folder.
@@ -270,7 +266,7 @@ class ConfigReader(object):
             )
 
         # Parse and read in the config files.
-        this_config = self._recursive_read(directory_path, filename, config, allow_errors)
+        this_config = self._recursive_read(directory_path, filename, config)
 
         if "dependencies" in config or "dependencies" in this_config:
             this_config['dependencies'] = \
@@ -285,7 +281,7 @@ class ConfigReader(object):
         self.logger.debug("Config: %s", config)
         return config
 
-    def _recursive_read(self, directory_path, filename, stack_group_config, allow_errors):
+    def _recursive_read(self, directory_path, filename, stack_group_config):
         """
         Traverses the directory_path, from top to bottom, reading in all
         relevant config files. If config attributes are encountered further
@@ -308,12 +304,11 @@ class ConfigReader(object):
         config = {}
 
         if directory_path:
-            config = self._recursive_read(parent_directory, filename,
-                                          stack_group_config, allow_errors)
+            config = self._recursive_read(parent_directory, filename, stack_group_config)
 
         # Read config file and overwrite inherited properties
         child_config = self._render(directory_path, filename,
-                                    stack_group_config, allow_errors) or {}
+                                    stack_group_config) or {}
 
         for config_key, strategy in CONFIG_MERGE_STRATEGIES.items():
             value = strategy(
@@ -327,7 +322,7 @@ class ConfigReader(object):
 
         return config
 
-    def _render(self, directory_path, basename, stack_group_config, allow_errors):
+    def _render(self, directory_path, basename, stack_group_config):
         """
         Reads a configuration file, loads the config file as a template
         and returns config loaded from the file.
@@ -344,13 +339,13 @@ class ConfigReader(object):
         config = {}
         abs_directory_path = path.join(self.full_config_path, directory_path)
         if path.isfile(path.join(abs_directory_path, basename)):
-            if allow_errors:
-                jinja_env = jinja2.Environment(
-                    loader=jinja2.FileSystemLoader(abs_directory_path),
-                    undefined=SilentUndefined
-                )
-                template = jinja_env.get_template(basename)
-                self.templating_vars.update(stack_group_config)
+            jinja_env = jinja2.Environment(
+                loader=jinja2.FileSystemLoader(abs_directory_path),
+                undefined=jinja2.Undefined
+            )
+            template = jinja_env.get_template(basename)
+            self.templating_vars.update(stack_group_config)
+            try:
                 rendered_template = template.render(
                     self.templating_vars,
                     command_path=self.context.command_path.split(path.sep),
@@ -358,22 +353,9 @@ class ConfigReader(object):
                 )
 
                 config = yaml.safe_load(rendered_template)
-                return config
-            else:
-                jinja_env = jinja2.Environment(
-                    loader=jinja2.FileSystemLoader(abs_directory_path),
-                    undefined=jinja2.StrictUndefined
-                )
-                template = jinja_env.get_template(basename)
-                self.templating_vars.update(stack_group_config)
-                rendered_template = template.render(
-                    self.templating_vars,
-                    command_path=self.context.command_path.split(path.sep),
-                    environment_variable=environ
-                )
-
-                config = yaml.safe_load(rendered_template)
-                return config
+            except jinja2.exceptions.UndefinedError:
+                self.logger.info("variable undefined")
+            return config
 
     @staticmethod
     def _check_valid_project_path(config_path):
@@ -526,5 +508,5 @@ class ConfigReader(object):
 
 class SilentUndefined(jinja2.Undefined):
     def _fail_with_undefined_error(self, *args, **kwargs):
-        logging.exception('something was undefined!')
+        logging.info('something was undefined!')
         return None
