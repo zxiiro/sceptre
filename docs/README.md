@@ -1,3 +1,14 @@
+# LEGACY DOCS
+
+Follow these steps to build legacy docs compatible with GH pages deployment (sceptre v2+):
+
+1. Cherry pick this commit into the legacy version of your choice
+2. Create python venv
+3. install sceptre `pip install .` or `python setup.py install`
+4. `cd docs`
+5. `make build-gh-pages`
+6. Take the `_site/docs` directory and commit it to `sceptre.github.io` as `<version_number>/<content of docs/ directory>`
+
 # Docs
 
 This directory contains the code for Sceptre's [docs](https://sceptre.cloudreach.com).

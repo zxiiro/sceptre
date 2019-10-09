@@ -51,6 +51,10 @@ build-dev: clean build-api
 build-commit: clean build-api
 	bundle exec jekyll build --baseurl /$(SHA1)
 
+build-gh-pages: clean build-api
+	bundle exec jekyll build --baseurl "."
+	cp -r assets _site/docs
+
 serve-latest: clean build-latest
 	bundle exec jekyll serve --baseurl /latest
 
