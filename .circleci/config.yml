@@ -12,16 +12,16 @@ aliases:
     docker:
       - image: cloudreach/sceptre-circleci:0.4
         environment:
-          REPOSITORY_PATH: '/home/circleci/docs'
-          DEPLOYMENT_GIT_SSH: 'git@github.com:Sceptre/sceptre.github.io.git'
+          REPOSITORY_PATH: "/home/circleci/docs"
+          DEPLOYMENT_GIT_SSH: "git@github.com:Sceptre/sceptre.github.io.git"
     steps:
       - add_ssh_keys:
           fingerprints:
-            - '80:24:c0:40:28:36:f1:80:7f:fd:15:c3:09:cf:86:fc'
+            - "80:24:c0:40:28:36:f1:80:7f:fd:15:c3:09:cf:86:fc"
       - attach_workspace:
           at: /home/circleci
       - run:
-          name: 'Build and deploy docs'
+          name: "Build and deploy docs"
           command: |
             chmod +x .circleci/add-known-hosts.sh
             ./.circleci/add-known-hosts.sh
@@ -36,7 +36,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: 'Creating Virtualenv'
+          name: "Creating Virtualenv"
           command: virtualenv venv
       - restore_cache:
           key:
@@ -44,12 +44,12 @@ jobs:
             checksum "requirements/prod.txt" }}-{{ checksum
             "requirements/dev.txt" }}
       - run:
-          name: 'Installing Requirements'
+          name: "Installing Requirements"
           command: |
             . ./venv/bin/activate
-            pip install -r requirements/prod.txt
-            pip install -r requirements/dev.txt
-            pip install awscli
+            pip3 install -r requirements/prod.txt
+            pip3 install -r requirements/dev.txt
+            pip3 install awscli
       - save_cache:
           key:
             sceptre-{{ .Environment.CACHE_VERSION }}-requirements-{{ arch }}-{{
@@ -58,10 +58,10 @@ jobs:
           paths:
             - venv
       - run:
-          name: 'Installing Sceptre'
+          name: "Installing Sceptre"
           command: |
             . ./venv/bin/activate
-            pip install .
+            pip3 install .
       - persist_to_workspace:
           root: /home/circleci
           paths:
@@ -74,18 +74,17 @@ jobs:
       - attach_workspace:
           at: /home/circleci
       - restore_cache:
-          key:
-            sceptre-{{ .Environment.CACHE_VERSION }}-tox-requirements-{{ arch
+          key: sceptre-{{ .Environment.CACHE_VERSION }}-tox-requirements-{{ arch
             }}-{{ checksum "requirements/prod.txt" }}-{{ checksum
             "requirements/dev.txt" }} -{{ checksum "tox.ini" }}
       - run:
-          name: 'Linting'
+          name: "Linting"
           command: |
             . ./venv/bin/activate
             make lint
 
       - run:
-          name: 'Unit Test'
+          name: "Unit Test"
           command: |
             make test-all
 
@@ -98,7 +97,7 @@ jobs:
           destination: test-results
 
       - run:
-          name: 'Coverage'
+          name: "Coverage"
           command: |
             . venv/bin/activate
             make coverage
@@ -117,8 +116,7 @@ jobs:
             - project
 
       - save_cache:
-          key:
-            sceptre-{{ .Environment.CACHE_VERSION }}-tox-requirements-{{ arch
+          key: sceptre-{{ .Environment.CACHE_VERSION }}-tox-requirements-{{ arch
             }}-{{ checksum "requirements/prod.txt" }}-{{ checksum
             "requirements/dev.txt" }}-{{ checksum "tox.ini" }}
           paths:
@@ -146,7 +144,7 @@ jobs:
       - attach_workspace:
           at: /home/circleci
       - run:
-          name: 'Integration Testing'
+          name: "Integration Testing"
           command: |
             . ./venv/bin/activate
             behave --junit \
@@ -187,15 +185,15 @@ jobs:
       - attach_workspace:
           at: /home/circleci
       - run:
-          name: 'Create Distributions'
+          name: "Create Distributions"
           command: |
             . ./venv/bin/activate
             make dist
       - run:
-          name: 'Upload Distributions'
+          name: "Upload Distributions"
           command: |
             . ./venv/bin/activate
-            pip install twine
+            pip3 install twine
             twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
 
   deploy-latest-dockerhub:

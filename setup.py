@@ -19,7 +19,8 @@ install_requirements = [
     "colorama==0.3.9",
     "packaging>=16.8,<17.0",
     "six>=1.11.0,<2.0.0",
-    "networkx==2.1",
+    'networkx~=2.4;python_version>="3.5"',
+    'networkx<=2.2;python_version<"3.5"',
     "typing>=3.7.0,<3.8.0"
 ]
 
