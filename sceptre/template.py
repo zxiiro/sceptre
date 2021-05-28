@@ -133,6 +133,7 @@ class Template(object):
                         os.path.splitext(self.path)[1]
                     )
             except Exception as e:
+                print(e)
                 self._print_template_traceback()
                 raise e
 
@@ -167,6 +168,7 @@ class Template(object):
         )
 
         if not os.path.isfile(self.path):
+            print("Bad path: ", self.path)
             raise IOError("No such file or directory: '%s'", self.path)
 
         module = imp.load_source(self.name, self.path)
@@ -174,6 +176,7 @@ class Template(object):
         try:
             body = module.sceptre_handler(self.sceptre_user_data)
         except AttributeError as e:
+            print("DEBUG: ", e)
             if 'sceptre_handler' in str(e):
                 raise TemplateSceptreHandlerError(
                     "The template does not have the required "
